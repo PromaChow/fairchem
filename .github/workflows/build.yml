@@ -1,60 +1,81 @@
 name: build
-
-on: [workflow_dispatch, workflow_call]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-
   build-sdist:
     name: Build sdist
     runs-on: ubuntu-latest
-
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Optional, use if you use setuptools_scm
-
+          fetch-depth: 0
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
+        run: 'python -m pip install --upgrade pip
+
           pip install hatch
 
+          '
+      - id: measurement-4
+        name: Record Measurement After Install dependencies
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Install dependencies
+          task: get-measurement
       - name: Build
-        run: |
-          # add packages that are supposed to be built to this list
-          for package in fairchem-core fairchem-data-oc fairchem-demo-ocpapi fairchem-applications-cattsunami
-          do
-            pushd packages/$package
-            hatch build
-            popd
-          done
-
-      # unfortunately there isn't a clean way to upload artifacts separately so just copy
-      # for each new package right now
+        run: "# add packages that are supposed to be built to this list\nfor package\
+          \ in fairchem-core fairchem-data-oc fairchem-demo-ocpapi fairchem-applications-cattsunami\n\
+          do\n  pushd packages/$package\n  hatch build\n  popd\ndone\n"
+      - id: measurement-6
+        name: Record Measurement After Build
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Build
+          task: get-measurement
       - name: Upload core artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist-core
           path: dist-core/*
-
       - name: Upload data-oc artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist-data-oc
           path: dist-data-oc/*
-
       - name: Upload demo-ocpapi artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist-demo-ocpapi
           path: dist-demo-ocpapi/*
-
       - name: Upload applications-cattsunami artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist-applications-cattsunami
           path: dist-applications-cattsunami/*
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption-${{
+          github.run_id }}.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption-${{ github.run_id }}.json

@@ -1,28 +1,65 @@
 name: PR label checking (major/minor/patch, enhancement, etc)
-
 on:
-  pull_request:
-    types: [opened, labeled, unlabeled, synchronize]
+  push:
+    branches:
+      - main
 
 jobs:
   check-labels:
     runs-on: ubuntu-latest
     steps:
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: start-measurement
       - uses: actions/checkout@v4
-      - name: Labels not added (patch, minor, major, dependencies)
-        if: >
-          contains(github.event.pull_request.labels.*.name, 'patch') == false &&
-          contains(github.event.pull_request.labels.*.name, 'minor') == false && 
-          contains(github.event.pull_request.labels.*.name, 'major') == false && 
-          contains(github.event.pull_request.labels.*.name, 'dependencies') == false
+      - if: 'contains(github.event.pull_request.labels.*.name, ''patch'') == false
+          && contains(github.event.pull_request.labels.*.name, ''minor'') == false
+          &&  contains(github.event.pull_request.labels.*.name, ''major'') == false
+          &&  contains(github.event.pull_request.labels.*.name, ''dependencies'')
+          == false
+
+          '
+        name: Labels not added (patch, minor, major, dependencies)
         run: exit 1
-      - name: Labels not added (enhancement,bug,test,deprecation,dependencies,documentation,deprecation)
-        if: >
-          contains(github.event.pull_request.labels.*.name, 'enhancement') == false &&
-          contains(github.event.pull_request.labels.*.name, 'bug') == false &&
-          contains(github.event.pull_request.labels.*.name, 'test') == false && 
-          contains(github.event.pull_request.labels.*.name, 'deprecation') == false &&
-          contains(github.event.pull_request.labels.*.name, 'dependencies') == false &&
-          contains(github.event.pull_request.labels.*.name, 'documentation') == false &&
-          contains(github.event.pull_request.labels.*.name, 'deprecation') == false
+      - id: measurement-3
+        name: Record Measurement After Labels not added (patch, minor, major, dependencies)
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Labels not added (patch, minor, major, dependencies)
+          task: get-measurement
+      - if: 'contains(github.event.pull_request.labels.*.name, ''enhancement'') ==
+          false && contains(github.event.pull_request.labels.*.name, ''bug'') == false
+          && contains(github.event.pull_request.labels.*.name, ''test'') == false
+          &&  contains(github.event.pull_request.labels.*.name, ''deprecation'') ==
+          false && contains(github.event.pull_request.labels.*.name, ''dependencies'')
+          == false && contains(github.event.pull_request.labels.*.name, ''documentation'')
+          == false && contains(github.event.pull_request.labels.*.name, ''deprecation'')
+          == false
+
+          '
+        name: Labels not added (enhancement,bug,test,deprecation,dependencies,documentation,deprecation)
         run: exit 1
+      - id: measurement-5
+        name: Record Measurement After Labels not added (enhancement,bug,test,deprecation,dependencies,documentation,deprecation)
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Labels not added (enhancement,bug,test,deprecation,dependencies,documentation,deprecation)
+          task: get-measurement
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption-${{
+          github.run_id }}.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption-${{ github.run_id }}.json

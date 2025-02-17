@@ -1,29 +1,40 @@
 name: Release Drafter - fairchem_data_oc
-
 on:
   push:
     branches:
       - main
-    paths:
-      - 'src/fairchem/data/oc/**'
-      - 'packages/fairchem-data-oc/**'
-  workflow_dispatch:
 
-
-permissions:
-  contents: read
-  
 jobs:
   update_release_draft:
     permissions:
-        # write permission is required to create a github release
-        contents: write
-        pull-requests: read
+      contents: write
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
         with:
-          disable-autolabeler: true
-          config-name: release-drafter-data_oc.yml
-        env:
+          json-output: true
+          task: start-measurement
+      - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter-data_oc.yml
+          disable-autolabeler: true
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption-${{
+          github.run_id }}.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption-${{ github.run_id }}.json
+permissions:
+  contents: read

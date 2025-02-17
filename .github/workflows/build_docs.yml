@@ -1,46 +1,84 @@
-# build the documentation and upload the built artifact
 name: build documentation
-
 on:
-  workflow_call:
-  workflow_dispatch:
-  pull_request_review:
-    types: [submitted]
-  merge_group:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
+      - name: Start Energy Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: start-measurement
+      - uses: actions/checkout@v4
+      - name: Install pandoc
+        run: sudo apt-get install pandoc
+      - id: measurement-3
+        name: Record Measurement After Install pandoc
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Install pandoc
+          task: get-measurement
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: 'python -m pip install --upgrade pip
 
-    - name: Install pandoc
-      run: sudo apt-get install pandoc
+          if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt;
+          fi
 
-    # Install dependencies
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.12
+          if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt;
+          fi
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f packages/requirements.txt ]; then pip install -r packages/requirements.txt; fi
-        if [ -f packages/requirements-optional.txt ]; then pip install -r packages/requirements-optional.txt; fi
-        pip install -e packages/fairchem-core[docs,adsorbml]
-        pip install -e packages/fairchem-data-oc[dev]
-        pip install -e packages/fairchem-demo-ocpapi[dev]
-        pip install -e packages/fairchem-applications-cattsunami
+          pip install -e packages/fairchem-core[docs,adsorbml]
 
-    # Build the book
-    - name: Build the book
-      run: |
-        jupyter-book build docs
+          pip install -e packages/fairchem-data-oc[dev]
 
-    - name: Upload documentation artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: docs-html
-        path: docs/_build/html/*
+          pip install -e packages/fairchem-demo-ocpapi[dev]
+
+          pip install -e packages/fairchem-applications-cattsunami
+
+          '
+      - id: measurement-6
+        name: Record Measurement After Install dependencies
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Install dependencies
+          task: get-measurement
+      - name: Build the book
+        run: 'jupyter-book build docs
+
+          '
+      - id: measurement-8
+        name: Record Measurement After Build the book
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          label: Build the book
+          task: get-measurement
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-html
+          path: docs/_build/html/*
+      - id: display-measurement
+        name: Display Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4
+        with:
+          json-output: true
+          task: display-results
+      - name: Save Total Energy Consumption Data
+        run: echo '${{ steps.final-measurement.outputs.data-total-json }}' > total_energy_consumption-${{
+          github.run_id }}.json
+      - name: Upload Energy Consumption Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: total-energy-consumption
+          path: total_energy_consumption-${{ github.run_id }}.json
