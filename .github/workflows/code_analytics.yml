@@ -95,20 +95,20 @@ jobs:
           json-output: true
           label: Run Lizard Analysis
           task: get-measurement
-      - name: Analyze with Pylint
-        run: 'echo -e "\n=== Code Quality Metrics ===" >> metrics_report.txt
+      # - name: Analyze with Pylint
+      #   run: 'echo -e "\n=== Code Quality Metrics ===" >> metrics_report.txt
 
-          find . -type f -name "*.py" -not -path "*/.*" -exec pylint --output-format=text
-          {} + >> metrics_report.txt || true
+      #     find . -type f -name "*.py" -not -path "*/.*" -exec pylint --output-format=text
+      #     {} + >> metrics_report.txt || true
 
-          '
-      - id: measurement-12
-        name: Record Measurement After Analyze with Pylint
-        uses: green-coding-solutions/eco-ci-energy-estimation@v4
-        with:
-          json-output: true
-          label: Analyze with Pylint
-          task: get-measurement
+      #     '
+      # - id: measurement-12
+      #   name: Record Measurement After Analyze with Pylint
+      #   uses: green-coding-solutions/eco-ci-energy-estimation@v4
+      #   with:
+      #     json-output: true
+      #     label: Analyze with Pylint
+      #     task: get-measurement
       - name: Check complexity thresholds with Xenon
         run: 'echo -e "\n=== Complexity Thresholds ===" >> metrics_report.txt
 
